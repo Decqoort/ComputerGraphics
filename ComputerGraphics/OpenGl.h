@@ -1,21 +1,32 @@
 #pragma once
-#pragma once
 
 #include <windows.h>
 #include <GLFW/glfw3.h>
+#include <vector>
 
 using namespace System::Windows::Forms;
 
 namespace OpenGLForm
 {
+    struct GLsetting {
+        GLenum GLmode;
+        GLfloat lineWidth, pointSize;
+        GLsetting(GLenum mode, GLfloat width = 1, GLfloat size = 1) {
+            GLmode = mode;
+            lineWidth = width;
+            pointSize = size;
+        }
+    };
+
     public ref class COpenGl :
         public System::Windows::Forms::NativeWindow
     {
     private:
         HDC m_hDC;
         HGLRC m_hglrc;
+        //System::Collections::Generic::List<Tuple<float,float>> points;
     public:
-        COpenGl(System::Windows::Forms::Form^ parentForm,
+        COpenGl(System::Windows::Forms::Form ^ parentForm,
             GLsizei iWidth, GLsizei iHeight)
         {
             CreateParams^ cp = gcnew CreateParams;
@@ -42,18 +53,26 @@ namespace OpenGLForm
                 
         }
 
-        virtual System::Void Render(System::Void)
+        virtual System::Void Render(std::vector<std::pair<float, float>> vertexes,
+            OpenGLForm::GLsetting set)
         {
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
+            glPointSize(set.pointSize);
+            glLineWidth(set.lineWidth);
+            glBegin(set.GLmode);
+            for (size_t i = 0; i < vertexes.size(); i++)
+            {
+                int color = (i+1) % 8;
+                glColor3f(color >=4, (color == 2 || color == 6 || color == 7), (color % 2 != 0));
+                glVertex2f(vertexes[i].first, vertexes[i].second);
+            }
+            glEnd();
+        }
+
+        virtual System::Void RenderInit(System::Void)
+        {
+            glClearColor(0.17, 0.17, 0.17, 0.17);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             
-
-            glBegin(GL_TRIANGLES);
-
-
-            glVertex2f(0.0f, 0.0f);
-            glVertex2f(1, 1);
-            glVertex2f(1, 0);
-            glEnd();										
         }
 
         System::Void SwapOpenGLBuffers(System::Void)
@@ -122,10 +141,6 @@ namespace OpenGLForm
         bool InitGL(GLvoid)									
         {
             glClearColor(0.0f, 0.0f, 0.0f, 0.5f);			
-            //glClearDepth(1.0f);								
-            //glEnable(GL_DEPTH_TEST);						
-            //glDepthFunc(GL_LEQUAL);							
-            //glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
             return TRUE;									
         }
         GLvoid ReSizeGLScene(GLsizei width, GLsizei height)	
@@ -140,11 +155,9 @@ namespace OpenGLForm
             glMatrixMode(GL_PROJECTION);					
             glLoadIdentity();								
 
-            // Calculate The Aspect Ratio Of The Window
-            //gluPerspective(45.0f, (GLfloat)width / (GLfloat)height, 0.1f, 100.0f);
 
-            glMatrixMode(GL_MODELVIEW);							// Select The Modelview Matrix
-            glLoadIdentity();									// Reset The Modelview Matrix
+            glMatrixMode(GL_MODELVIEW);
+            glLoadIdentity();		
         }
     };
 }
